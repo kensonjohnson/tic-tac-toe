@@ -1,13 +1,43 @@
-//gameBoard is created as a module
+//-----------------Game Board Module--------------------
 const gameBoard = (() => {
   let currentBoard = new Array(9);
-  const winningCombos = [];
+  const board = document.querySelector("[data-gameBoard]");
+
+  //set initial hover state
+  board.classList.add("x");
+
+  //create function to insert values into the array
+  const addMoveToBoard = (index, sign) => {
+    currentBoard[index] = sign;
+  };
+
+  //create function to place mark on the board
+  const placeMark = (index, sign) => {
+    let cell = document.querySelector(`[data-cell="${index}"]`);
+    cell.classList.add(`${sign}`);
+  };
+
+  //create function to change the current hover state
+  const changeHoverState = () => {
+    board.classList.remove("x");
+    board.classList.remove("o");
+    if (gameController.isTurnX()) {
+      board.classList.add("x");
+    } else {
+      board.classList.add("o");
+    }
+  };
 
   //Create function to pass currentBoard to displayController
   const getCurrentBoard = () => currentBoard;
 
   //Create function to check for a winner or a draw
-  return { getCurrentBoard };
+  return {
+    getCurrentBoard,
+    addMoveToBoard,
+    changeHoverState,
+    placeMark,
+  };
 })();
 
 //Create displayController module
@@ -22,32 +52,52 @@ const displayController = (() => {
     const index = e.target.dataset.cell;
     console.log(`Clicked cell ${index}`);
     gameController.makePlay(index);
-    //insert into array
-    //check for win
-    //check for draw
-    gameController.switchTurn();
   }
   return {};
 })();
 
-//Create factory function for player objects
+//-------------Play Object Factory-------------
 const Player = (sign) => {
   const _sign = sign;
+  const WINNING_COMBOS = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
 
   //getter for this player's sign
   const getSign = () => _sign;
 
   const placeMark = (index) => {
-    let cell = document.querySelector(`[data-cell="${index}"]`);
-    cell.classList.add(`${_sign}`);
+    gameBoard.placeMark(index, _sign);
+  };
+
+  const insertIntoArray = (index) => {
+    gameBoard.addMoveToBoard(index, _sign);
+  };
+
+  const checkWin = (currentBoard) => {
+    return WINNING_COMBOS.some((combination) => {
+      return combination.every((index) => {
+        return currentBoard[index] == _sign;
+      });
+    });
   };
 
   return {
     getSign,
     placeMark,
+    insertIntoArray,
+    checkWin,
   };
 };
 
+//----------------Game Controller Module ------------------
 const gameController = (() => {
   const playerX = Player("x");
   const playerO = Player("o");
@@ -61,9 +111,20 @@ const gameController = (() => {
   const makePlay = (index) => {
     if (xTurn) {
       playerX.placeMark(index);
+      playerX.insertIntoArray(index);
+      if (playerX.checkWin(gameBoard.getCurrentBoard())) {
+        console.log("X wins!");
+      }
     } else {
       playerO.placeMark(index);
+      playerO.insertIntoArray(index);
+      if (playerO.checkWin(gameBoard.getCurrentBoard())) {
+        console.log("O wins!");
+      }
     }
+
+    //check for draw
+    switchTurn();
   };
 
   //getter for current turn. True means its X's turn
@@ -72,6 +133,9 @@ const gameController = (() => {
   //controller to switch the current turn
   const switchTurn = () => {
     xTurn = !xTurn;
+
+    //update the hover state
+    gameBoard.changeHoverState();
   };
 
   return {
@@ -79,6 +143,5 @@ const gameController = (() => {
     getPlayerO,
     makePlay,
     isTurnX,
-    switchTurn,
   };
 })();
