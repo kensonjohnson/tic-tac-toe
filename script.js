@@ -1,23 +1,80 @@
 //-----------------Game Board Module--------------------
 const gameBoard = (() => {
   let currentBoard = new Array(9);
-  const board = document.querySelector("[data-gameBoard]");
+  const cellElements = document.querySelectorAll("[data-cell]");
 
-  //set initial hover state
-  board.classList.add("x");
+  //Starts and restarts the game
+  const startGame = () => {
+    cellElements.forEach((cell) => {
+      cell.classList.remove("x");
+      cell.classList.remove("o");
+      cell.removeEventListener("click", handleClick);
+      cell.addEventListener("click", handleClick, { once: true });
+    });
 
-  //create function to insert values into the array
+    for (i = 0; i < 9; i++) {
+      currentBoard[i] = "";
+    }
+
+    gameController.resetBoard();
+
+    displayController.resetBoard();
+  };
+
+  //for the cell.addEventListener above
+  const handleClick = (e) => {
+    const index = e.target.dataset.cell;
+    gameController.makePlay(index);
+  };
+
+  //Insert given sign into currentBoard at given index
   const addMoveToBoard = (index, sign) => {
     currentBoard[index] = sign;
   };
 
-  //create function to place mark on the board
+  //Place given sign at given index within the data-cell list
   const placeMark = (index, sign) => {
     let cell = document.querySelector(`[data-cell="${index}"]`);
     cell.classList.add(`${sign}`);
   };
 
-  //create function to change the current hover state
+  //Getter for currentBoard Array
+  const getCurrentBoard = () => currentBoard;
+
+  return {
+    getCurrentBoard,
+    addMoveToBoard,
+    placeMark,
+    startGame,
+  };
+})();
+
+//--------------Display Controller Module------------
+
+const displayController = (() => {
+  const gameOverScreen = document.querySelector("[data-gameOverScreen]");
+  const gameOverText = document.querySelector("[data-gameOverText]");
+  const restartButton = document.querySelector("[data-restartButton]");
+  const board = document.querySelector("[data-gameBoard]");
+
+  //Shows game winning screen with given sign
+  const endGameWithWin = (sign) => {
+    gameOverText.innerHTML = `${sign}'s Win!!`;
+    gameOverScreen.classList.add("show");
+  };
+
+  //Shows game over screen with a draw
+  const endGameWithDraw = () => {
+    gameOverText.innerHTML = "It's a draw!";
+    gameOverScreen.classList.add("show");
+  };
+  //Resets the displayController portion of the game
+  const resetBoard = () => {
+    gameOverScreen.classList.remove("show");
+    changeHoverState();
+  };
+
+  //checks the current turn and changes the board's hover state to that player
   const changeHoverState = () => {
     board.classList.remove("x");
     board.classList.remove("o");
@@ -28,35 +85,20 @@ const gameBoard = (() => {
     }
   };
 
-  //Create function to pass currentBoard to displayController
-  const getCurrentBoard = () => currentBoard;
+  //Adds event listener to the restart button
+  restartButton.addEventListener("click", () => {
+    gameBoard.startGame();
+  });
 
-  //Create function to check for a winner or a draw
   return {
-    getCurrentBoard,
-    addMoveToBoard,
+    endGameWithWin,
+    endGameWithDraw,
     changeHoverState,
-    placeMark,
+    resetBoard,
   };
 })();
 
-//Create displayController module
-
-const displayController = (() => {
-  const cellElements = document.querySelectorAll("[data-cell]");
-
-  cellElements.forEach((cell) => {
-    cell.addEventListener("click", handleClick, { once: true });
-  });
-  function handleClick(e) {
-    const index = e.target.dataset.cell;
-    console.log(`Clicked cell ${index}`);
-    gameController.makePlay(index);
-  }
-  return {};
-})();
-
-//-------------Play Object Factory-------------
+//-------------Player Object Factory-------------
 const Player = (sign) => {
   const _sign = sign;
   const WINNING_COMBOS = [
@@ -81,6 +123,7 @@ const Player = (sign) => {
     gameBoard.addMoveToBoard(index, _sign);
   };
 
+  //Compares the currentBoard array to WINNING_COMBOS array and returns true if any winning combo is preset within currentBoard
   const checkWin = (currentBoard) => {
     return WINNING_COMBOS.some((combination) => {
       return combination.every((index) => {
@@ -89,11 +132,16 @@ const Player = (sign) => {
     });
   };
 
+  const winningPlay = () => {
+    displayController.endGameWithWin(_sign);
+  };
+
   return {
     getSign,
     placeMark,
     insertIntoArray,
     checkWin,
+    winningPlay,
   };
 };
 
@@ -113,18 +161,27 @@ const gameController = (() => {
       playerX.placeMark(index);
       playerX.insertIntoArray(index);
       if (playerX.checkWin(gameBoard.getCurrentBoard())) {
-        console.log("X wins!");
+        return playerX.winningPlay();
       }
     } else {
       playerO.placeMark(index);
       playerO.insertIntoArray(index);
       if (playerO.checkWin(gameBoard.getCurrentBoard())) {
-        console.log("O wins!");
+        return playerO.winningPlay();
       }
     }
+    if (isDraw(gameBoard.getCurrentBoard())) {
+      return displayController.endGameWithDraw();
+    } else {
+      switchTurn();
+    }
+  };
 
-    //check for draw
-    switchTurn();
+  //Check each cell within currentBoard Array, returns true if all are filled with x and o
+  const isDraw = (currentBoard) => {
+    return [...currentBoard].every((element) => {
+      return element == "x" || element == "o";
+    });
   };
 
   //getter for current turn. True means its X's turn
@@ -133,9 +190,11 @@ const gameController = (() => {
   //controller to switch the current turn
   const switchTurn = () => {
     xTurn = !xTurn;
+    displayController.changeHoverState();
+  };
 
-    //update the hover state
-    gameBoard.changeHoverState();
+  const resetBoard = () => {
+    xTurn = true;
   };
 
   return {
@@ -143,5 +202,8 @@ const gameController = (() => {
     getPlayerO,
     makePlay,
     isTurnX,
+    resetBoard,
   };
 })();
+
+gameBoard.startGame();
