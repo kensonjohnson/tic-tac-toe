@@ -8,6 +8,6 @@ This is a simple Tic-Tac-Toe game with a minimalistic UI.
 In this project I focused on using modules and factories to keep the namespace clear and utilize private variables. 
 
 ## Highlights:
-- The X's and O's are generated pusrely with CSS, meaning no weird issues with rendering fonts!
+- The X's and O's are generated pusrely with CSS, meaning no weird issues with rendering fonts.
 - All of the logic within this app is stored within modules and factory methods, meaning the namespace is clear and variables are essentially private.
-- Design is minimal and clean.
+- UI design is minimal and clean.
